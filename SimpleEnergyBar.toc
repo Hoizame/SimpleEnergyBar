@@ -1,0 +1,11 @@
+## Interface: 11302
+## Author: Lag
+## Version: @project-version@
+## SavedVariablesPerCharacter: SimpleEnergyBarDB
+
+## Title: SimpleEnergyBar
+## Notes: SimpleEnergyBar
+
+## X-Curse-Project-ID: 
+
+SimpleEnergyBar.lua
