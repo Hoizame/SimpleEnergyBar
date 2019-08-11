@@ -13,13 +13,21 @@ local unpack, tbl_remove = _G.unpack, _G.table.remove
 -- WoW
 local GetTime = _G.GetTime
 local CreateFrame = _G.CreateFrame
-local UnitPower, UnitPowerMax = _G.UnitPower, _G.UnitPowerMax
+local UnitPower, UnitPowerMax, UnitBuff = _G.UnitPower, _G.UnitPowerMax, _G.UnitBuff
+local UnitAffectingCombat = _G.UnitAffectingCombat
+local GetShapeshiftForm = _G.GetShapeshiftForm
+local GetSpellInfo = GetSpellInfo
+
 
 local BASE_REG_SEC = 2.0
 local ENERGY_FORMAT_STRING = "%d / %d"
 local ENERGY_FORMAT_STRING_TIMER = "%d / %d (%.1f)"
 local EVENT_UNIT_POWER_FREQUENT, PLAYER_UNIT, POWER_TYPE = "UNIT_POWER_FREQUENT", "player", "ENERGY"
+local EVENT_UNIT_MAXPOWER = "UNIT_MAXPOWER"
+local EVENT_COMBAT_START, EVENT_COMBAT_END = "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED"
+local EVENT_SHAPESHIFT, EVENT_STEALTH = "UPDATE_SHAPESHIFT_FORM", "UPDATE_STEALTH"
 local ENUM_P_TYPE_ENERGY = Enum.PowerType.Energy
+local STEALTH_BUFF_NAME = PlayerClass == "DRUID" and GetSpellInfo(5215) or GetSpellInfo(1784)
 
 -- Event handler
 local function OnEvent(self, event, ...)
@@ -36,19 +44,42 @@ local function OnSlash(key, value, ...)
         if key == "width" and tonumber(value) then
             SimpleEnergyBarDB.width = tonumber(value) >= 50 and tonumber(value) or 50
             SEB:UpdateFrameSize()
+            SEB:Print("'width' set: "..SimpleEnergyBarDB.width)
         elseif key == "height" and tonumber(value) then
             SimpleEnergyBarDB.height = tonumber(value) >= 10 and tonumber(value) or 10
             SEB:UpdateFrameSize()
+            SEB:Print("'height' set: "..SimpleEnergyBarDB.height)
         elseif key == "lock" and tonumber(value) then
             local enable = tonumber(value) == 1 and true or false
             SimpleEnergyBarDB.locked = enable
             SEB:UpdateFrameSize()
+            SEB:Print("'lock' set: "..( enable and "true" or "false" ))
+        elseif key == "incombatonly" and tonumber(value) then
+            local enable = tonumber(value) == 1 and true or false
+            SimpleEnergyBarDB.inCombatOnly = enable
+            SEB:UpdateFrameSize()
+            SEB:Print("'inCombatOnly' set: "..( enable and "true" or "false" ))
+        elseif key == "showinstealth" and tonumber(value) then
+            local enable = tonumber(value) == 1 and true or false
+            SimpleEnergyBarDB.showInStealth = enable
+            SEB:UpdateFrameSize()
+            SEB:Print("'showInStealth' set: "..( enable and "true" or "false" ))
+        elseif PlayerClass == "DRUID" and key == "onlyincatform" and tonumber(value) then
+            local enable = tonumber(value) == 1 and true or false
+            SimpleEnergyBarDB.onlyInCatForm = enable
+            SEB:UpdateFrameSize()
+            SEB:Print("'onlyInCatForm' set: "..( enable and "true" or "false" ))
         end
     else
         SEB:Print("Slash commands")
-        SEB:Print(" - lock 0/1")
         SEB:Print(" - width xxx")
         SEB:Print(" - height xxx")
+        SEB:Print(" - lock 0/1")
+        SEB:Print(" - inCombatOnly 0/1")
+        SEB:Print(" - showInStealth 0/1")
+        if PlayerClass == "DRUID" then
+            SEB:Print(" - onlyInCatForm 0/1")
+        end
     end
 end
 
@@ -78,21 +109,76 @@ local function FrameOnDragStop(self)
 	SimpleEnergyBarDB.point = { a, nil, c, d, e }
 end
 
-local function OnUpdate(self, elapsed)
-    if not self.nextTick then return end
+local function OnUpdate()
+    if not SEB.nextTick then return end
     local curTime = GetTime()
-    local diff = self.nextTick - curTime
+    local diff = SEB.nextTick - curTime
     if diff < 0 then
-        self.nextTick = curTime + BASE_REG_SEC
+        SEB.nextTick = curTime + BASE_REG_SEC
         diff = 0
     end
-    if self.updateText then
-        self.statusbar.text:SetText(format(ENERGY_FORMAT_STRING_TIMER, self.power, self.powerMax, diff))
-    end
-    local position = self.sparkRange - ( ( self.sparkRange / BASE_REG_SEC ) * ( ( BASE_REG_SEC * 0.5 ) * diff ) )
+    if SEB.barFrame:IsShown() then
+        local barFrame = SEB.barFrame
+        if barFrame.updateText then
+            barFrame.statusbar.text:SetText(format(ENERGY_FORMAT_STRING_TIMER, barFrame.power, barFrame.maxValue, diff))
+        end
+        local position = barFrame.sparkRange - ( ( barFrame.sparkRange / BASE_REG_SEC ) * ( ( BASE_REG_SEC * 0.5 ) * diff ) )
 
-    self.statusbar.spark:SetPoint("CENTER", self.statusbar, "LEFT", position, 0)
+        barFrame.statusbar.spark:SetPoint("CENTER", barFrame.statusbar, "LEFT", position, 0)
+    end
 end
+local UpdateFrame = CreateFrame("Frame", UIParent)
+UpdateFrame:SetScript("OnUpdate", OnUpdate)
+
+local function HandleDruidShapeShift()
+    if SimpleEnergyBarDB.onlyInCatForm then
+        if GetShapeshiftForm() == 2 then
+            if SimpleEnergyBarDB.showInStealth then
+                for i = 1, 40 do
+                    local buffName = UnitBuff(PLAYER_UNIT,i)
+                    if not buffName then break end
+                    if buffName == STEALTH_BUFF_NAME then
+                        SEB.barFrame:Show()
+                        return true
+                    end
+                end
+            elseif SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) then
+                SEB.barFrame:Show()
+                return true
+            else
+                SEB.barFrame:Hide()
+                return false
+            end
+        else
+            SEB.barFrame:Hide()
+            return false
+        end
+    else
+        if not SimpleEnergyBarDB.inCombatOnly or ( SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) ) then
+            SEB.barFrame:Show()
+            return true
+        else
+            SEB.barFrame:Hide()
+            return false
+        end
+    end
+end
+
+local function HandleRogueShapeShift()
+    if SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) then
+        SEB.barFrame:Show()
+        return true
+    elseif SimpleEnergyBarDB.showInStealth then
+        if GetShapeshiftForm() > 0 then
+            SEB.barFrame:Show()
+            return true
+        end
+    end
+    SEB.barFrame:Hide()
+    return false
+end
+
+local ShapeShiftOnEvent = PlayerClass == "DRUID" and HandleDruidShapeShift or HandleRogueShapeShift
 
 local lastReg
 local function FramOnEvent(self, event, arg1, arg2, ...)
@@ -101,25 +187,29 @@ local function FramOnEvent(self, event, arg1, arg2, ...)
         local power, powerMax = UnitPower(PLAYER_UNIT, ENUM_P_TYPE_ENERGY), UnitPowerMax(PLAYER_UNIT, ENUM_P_TYPE_ENERGY)
         local lastPowerCheck = ( self.power and self.power < power ) and true or false
         self.power = power
-        if self.powerMax ~= powerMax then
-            self.powerMax = powerMax
-            statusbar:SetMinMaxValues(0, powerMax)
-        end
         statusbar:SetValue(power)
         if power >= powerMax then
             self.updateText = false
             statusbar.text:SetText(format(ENERGY_FORMAT_STRING, power, powerMax))
-        elseif not self.nextTick then
-            self.nextTick = GetTime() + BASE_REG_SEC
+        elseif not SEB.nextTick then
+            SEB.nextTick = GetTime() + BASE_REG_SEC
             self.updateText = true
-        elseif self.nextTick and power < powerMax then
+        elseif SEB.nextTick and power < powerMax then
             self.updateText = true
         end
 
-        if self.nextTick and lastPowerCheck then
-            self.nextTick = GetTime() + BASE_REG_SEC
+        if SEB.nextTick and lastPowerCheck then
+            SEB.nextTick = GetTime() + BASE_REG_SEC
             statusbar.spark:SetPoint("CENTER", statusbar, "LEFT", 0, 0)
         end
+    elseif event == EVENT_UNIT_MAXPOWER and arg1 == PLAYER_UNIT and arg2 == POWER_TYPE then
+        SEB:UpdateFrameSize()
+    elseif event == EVENT_COMBAT_START and SimpleEnergyBarDB.inCombatOnly then
+        ShapeShiftOnEvent()
+    elseif event == EVENT_COMBAT_END and SimpleEnergyBarDB.inCombatOnly then
+        ShapeShiftOnEvent()
+    elseif event == EVENT_SHAPESHIFT or event == EVENT_STEALTH then
+        ShapeShiftOnEvent()
     end
 end
 
@@ -171,6 +261,23 @@ function SEB:UpdateFrameSize()
         frame:SetScript("OnMouseDown", FrameOnDragStart)
         frame:SetScript("OnMouseUp", FrameOnDragStop)
     end
+    if db.inCombatOnly then
+        if UnitAffectingCombat(PLAYER_UNIT) then
+            frame:Show()
+        else
+            ShapeShiftOnEvent()
+        end
+        frame:RegisterEvent(EVENT_COMBAT_START)
+        frame:RegisterEvent(EVENT_COMBAT_END)
+    elseif not db.inCombatOnly then
+        if PlayerClass == "DRUID" then
+            ShapeShiftOnEvent()
+        else
+            frame:Show()
+        end
+        frame:UnregisterEvent(EVENT_COMBAT_START)
+        frame:UnregisterEvent(EVENT_COMBAT_END)
+    end
 end
 
 function SEB:GetEnergyBar()
@@ -184,6 +291,11 @@ function SEB:GetEnergyBar()
         frame:SetBackdropColor(0, 0, 0)
         frame:RegisterForDrag("LeftButton", "RightButton")
         frame:RegisterEvent(EVENT_UNIT_POWER_FREQUENT)
+        frame:RegisterEvent(EVENT_UNIT_MAXPOWER)
+        frame:RegisterEvent(EVENT_SHAPESHIFT)
+        if PlayerClass == "DRUID" then
+            frame:RegisterEvent(EVENT_STEALTH)
+        end
         frame:SetScript("OnEvent", FramOnEvent)
         frame:SetScript("OnUpdate", OnUpdate)
 
