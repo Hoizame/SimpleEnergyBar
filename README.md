@@ -1,6 +1,8 @@
 # SimpleEnergyBar
 
-This addon provides a energy bar with info when the next tick is happen.
+This addon provides a energy bar with info when the next tick is happen
+
+![image](https://drive.google.com/uc?export=view&id=1Y-LQ4kOQjTKJ5doW1rV8a7EH_008yGwk)
 
 ## Basic info
 
