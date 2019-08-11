@@ -155,7 +155,7 @@ local function HandleDruidShapeShift()
 
     if checkForBuff() then
         return true
-    elseif SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) then
+    elseif not SimpleEnergyBarDB.inCombatOnly or ( SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) ) then
         SEB.barFrame:Show()
         return true
     else
@@ -165,7 +165,7 @@ local function HandleDruidShapeShift()
 end
 
 local function HandleRogueShapeShift()
-    if SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) then
+    if not SimpleEnergyBarDB.inCombatOnly or ( SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) ) then
         SEB.barFrame:Show()
         return true
     elseif SimpleEnergyBarDB.showInStealth then
