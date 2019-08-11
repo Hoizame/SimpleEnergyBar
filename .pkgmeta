@@ -1,3 +1,6 @@
 package-as: SimpleEnergyBar
 
 enable-nolib-creation: no
+
+ignore:
+ - README.md

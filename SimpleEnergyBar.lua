@@ -120,47 +120,47 @@ local function OnUpdate()
     if SEB.barFrame:IsShown() then
         local barFrame = SEB.barFrame
         if barFrame.updateText then
-            barFrame.statusbar.text:SetText(format(ENERGY_FORMAT_STRING_TIMER, barFrame.power, barFrame.maxValue, diff))
+            barFrame.statusbar.text:SetText(format(ENERGY_FORMAT_STRING_TIMER, barFrame.power, barFrame.statusbar.maxValue, diff))
         end
-        local position = barFrame.sparkRange - ( ( barFrame.sparkRange / BASE_REG_SEC ) * ( ( BASE_REG_SEC * 0.5 ) * diff ) )
 
+        local position = barFrame.sparkRange - ( ( barFrame.sparkRange / BASE_REG_SEC ) * ( ( BASE_REG_SEC * 0.5 ) * diff ) )
         barFrame.statusbar.spark:SetPoint("CENTER", barFrame.statusbar, "LEFT", position, 0)
     end
 end
 local UpdateFrame = CreateFrame("Frame", UIParent)
 UpdateFrame:SetScript("OnUpdate", OnUpdate)
 
+local function checkForBuff()
+    if not SimpleEnergyBarDB.showInStealth then return end
+    for i = 1, 40 do
+        local buffName = UnitBuff(PLAYER_UNIT,i)
+        if not buffName then break end
+        if buffName == STEALTH_BUFF_NAME then
+            SEB.barFrame:Show()
+            return true
+        end
+    end
+    return false
+end
+
 local function HandleDruidShapeShift()
     if SimpleEnergyBarDB.onlyInCatForm then
         if GetShapeshiftForm() == 2 then
-            if SimpleEnergyBarDB.showInStealth then
-                for i = 1, 40 do
-                    local buffName = UnitBuff(PLAYER_UNIT,i)
-                    if not buffName then break end
-                    if buffName == STEALTH_BUFF_NAME then
-                        SEB.barFrame:Show()
-                        return true
-                    end
-                end
-            elseif SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) then
-                SEB.barFrame:Show()
-                return true
-            else
-                SEB.barFrame:Hide()
-                return false
-            end
+            -- pass
         else
             SEB.barFrame:Hide()
             return false
         end
+    end
+
+    if checkForBuff() then
+        return true
+    elseif SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) then
+        SEB.barFrame:Show()
+        return true
     else
-        if not SimpleEnergyBarDB.inCombatOnly or ( SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) ) then
-            SEB.barFrame:Show()
-            return true
-        else
-            SEB.barFrame:Hide()
-            return false
-        end
+        SEB.barFrame:Hide()
+        return false
     end
 end
 
@@ -173,6 +173,9 @@ local function HandleRogueShapeShift()
             SEB.barFrame:Show()
             return true
         end
+    elseif not SimpleEnergyBarDB.inCombatOnly then
+        SEB.barFrame:Show()
+        return true
     end
     SEB.barFrame:Hide()
     return false
@@ -270,11 +273,7 @@ function SEB:UpdateFrameSize()
         frame:RegisterEvent(EVENT_COMBAT_START)
         frame:RegisterEvent(EVENT_COMBAT_END)
     elseif not db.inCombatOnly then
-        if PlayerClass == "DRUID" then
-            ShapeShiftOnEvent()
-        else
-            frame:Show()
-        end
+        ShapeShiftOnEvent()
         frame:UnregisterEvent(EVENT_COMBAT_START)
         frame:UnregisterEvent(EVENT_COMBAT_END)
     end
