@@ -243,8 +243,6 @@ function SEB:UpdateFrameSize()
     frame.statusbar.spark:SetHeight((db.height or baseHeight)+4)
 
     frame.statusbar.maxValue = UnitPowerMax(PLAYER_UNIT, ENUM_P_TYPE_ENERGY)
-    print(frame.statusbar.maxValue)
-    print(UnitPower(PLAYER_UNIT, ENUM_P_TYPE_ENERGY))
     frame.statusbar:SetMinMaxValues(0, frame.statusbar.maxValue)
     frame.statusbar:SetValue(UnitPower(PLAYER_UNIT, ENUM_P_TYPE_ENERGY))
 
