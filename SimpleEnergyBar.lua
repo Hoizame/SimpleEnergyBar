@@ -16,7 +16,7 @@ local CreateFrame = _G.CreateFrame
 local UnitPower, UnitPowerMax, UnitBuff = _G.UnitPower, _G.UnitPowerMax, _G.UnitBuff
 local UnitAffectingCombat = _G.UnitAffectingCombat
 local GetShapeshiftForm = _G.GetShapeshiftForm
-local GetSpellInfo = GetSpellInfo
+local GetSpellInfo = _G.GetSpellInfo
 
 
 local BASE_REG_SEC = 2.0
@@ -217,14 +217,11 @@ local function FramOnEvent(self, event, arg1, arg2, ...)
 end
 
 -- Core
-function SEB.ADDON_LOADED(addon)
-    if addon == SEB_Name then
-        SEB:GetEnergyBar()
-
-        EventFrame:UnregisterEvent("ADDON_LOADED")
-    end
+function SEB.PLAYER_LOGIN()
+    SEB:GetEnergyBar()
+    EventFrame:UnregisterEvent("PLAYER_LOGIN")
 end
-EventFrame:RegisterEvent("ADDON_LOADED")
+EventFrame:RegisterEvent("PLAYER_LOGIN")
 
 function SEB:Print(msg)
 	print("|cff33ff99SimpleEnergyBar|r: "..(msg or ""))
@@ -246,6 +243,8 @@ function SEB:UpdateFrameSize()
     frame.statusbar.spark:SetHeight((db.height or baseHeight)+4)
 
     frame.statusbar.maxValue = UnitPowerMax(PLAYER_UNIT, ENUM_P_TYPE_ENERGY)
+    print(frame.statusbar.maxValue)
+    print(UnitPower(PLAYER_UNIT, ENUM_P_TYPE_ENERGY))
     frame.statusbar:SetMinMaxValues(0, frame.statusbar.maxValue)
     frame.statusbar:SetValue(UnitPower(PLAYER_UNIT, ENUM_P_TYPE_ENERGY))
 
