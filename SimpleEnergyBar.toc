@@ -6,6 +6,6 @@
 ## Title: SimpleEnergyBar
 ## Notes: SimpleEnergyBar
 
-## X-Curse-Project-ID: 
+## X-Curse-Project-ID: 334942
 
 SimpleEnergyBar.lua
