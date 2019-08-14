@@ -22,12 +22,14 @@ local GetSpellInfo = _G.GetSpellInfo
 local BASE_REG_SEC = 2.0
 local ENERGY_FORMAT_STRING = "%d / %d"
 local ENERGY_FORMAT_STRING_TIMER = "%d / %d (%.1f)"
+local ENERGY_FORMAT_STRING_TIMER_NO_MAX = "%d (%.1f)"
 local EVENT_UNIT_POWER_FREQUENT, PLAYER_UNIT, POWER_TYPE = "UNIT_POWER_FREQUENT", "player", "ENERGY"
 local EVENT_UNIT_MAXPOWER = "UNIT_MAXPOWER"
 local EVENT_COMBAT_START, EVENT_COMBAT_END = "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED"
 local EVENT_SHAPESHIFT, EVENT_STEALTH = "UPDATE_SHAPESHIFT_FORM", "UPDATE_STEALTH"
 local ENUM_P_TYPE_ENERGY = Enum.PowerType.Energy
 local STEALTH_BUFF_NAME = PlayerClass == "DRUID" and GetSpellInfo(5215) or GetSpellInfo(1784)
+local FONT_STRING, FONT_SIZE = _G["SystemFont_Tiny"]:GetFont()
 
 -- Event handler
 local function OnEvent(self, event, ...)
@@ -64,11 +66,24 @@ local function OnSlash(key, value, ...)
             SimpleEnergyBarDB.showInStealth = enable
             SEB:UpdateFrameSize()
             SEB:Print("'showInStealth' set: "..( enable and "true" or "false" ))
+        elseif key == "showonlycurrentenergy" and tonumber(value) then
+            local enable = tonumber(value) == 1 and true or false
+            SimpleEnergyBarDB.showOnlyCurrentEnergy = enable
+            SEB:UpdateFrameSize()
+            SEB:Print("'showOnlyCurrentEnergy' set: "..( enable and "true" or "false" ))
+        elseif key == "textsize" and tonumber(value) then
+            local value = tonumber(value)
+            if value >= 3 then
+                SimpleEnergyBarDB.textSize = value
+                SEB:UpdateFrameSize()
+                SEB:Print("'textSize' set: "..value)
+            end
         elseif PlayerClass == "DRUID" and key == "onlyincatform" and tonumber(value) then
             local enable = tonumber(value) == 1 and true or false
             SimpleEnergyBarDB.onlyInCatForm = enable
             SEB:UpdateFrameSize()
             SEB:Print("'onlyInCatForm' set: "..( enable and "true" or "false" ))
+
         end
     else
         SEB:Print("Slash commands")
@@ -77,6 +92,8 @@ local function OnSlash(key, value, ...)
         SEB:Print(" - lock 0/1")
         SEB:Print(" - inCombatOnly 0/1")
         SEB:Print(" - showInStealth 0/1")
+        SEB:Print(" - showOnlyCurrentEnergy 0/1")
+        SEB:Print(" - textSize xxx")
         if PlayerClass == "DRUID" then
             SEB:Print(" - onlyInCatForm 0/1")
         end
@@ -120,7 +137,11 @@ local function OnUpdate()
     if SEB.barFrame:IsShown() then
         local barFrame = SEB.barFrame
         if barFrame.updateText then
-            barFrame.statusbar.text:SetText(format(ENERGY_FORMAT_STRING_TIMER, barFrame.power, barFrame.statusbar.maxValue, diff))
+            if SimpleEnergyBarDB.showOnlyCurrentEnergy then
+                barFrame.statusbar.text:SetText(format(ENERGY_FORMAT_STRING_TIMER_NO_MAX, barFrame.power, diff))
+            else
+                barFrame.statusbar.text:SetText(format(ENERGY_FORMAT_STRING_TIMER, barFrame.power, barFrame.statusbar.maxValue, diff))
+            end
         end
 
         local position = barFrame.sparkRange - ( ( barFrame.sparkRange / BASE_REG_SEC ) * ( ( BASE_REG_SEC * 0.5 ) * diff ) )
@@ -193,7 +214,11 @@ local function FramOnEvent(self, event, arg1, arg2, ...)
         statusbar:SetValue(power)
         if power >= powerMax then
             self.updateText = false
-            statusbar.text:SetText(format(ENERGY_FORMAT_STRING, power, powerMax))
+            if SimpleEnergyBarDB.showOnlyCurrentEnergy then
+                statusbar.text:SetText(power)
+            else
+                statusbar.text:SetText(format(ENERGY_FORMAT_STRING, power, powerMax))
+            end
         elseif not SEB.nextTick then
             SEB.nextTick = GetTime() + BASE_REG_SEC
             self.updateText = true
@@ -242,9 +267,21 @@ function SEB:UpdateFrameSize()
     frame.statusbar.spark:SetWidth((db.height or baseHeight))
     frame.statusbar.spark:SetHeight((db.height or baseHeight)+4)
 
+    frame.statusbar.text:SetFont(FONT_STRING, SimpleEnergyBarDB.textSize or FONT_SIZE )
+
+    local curEnergy = UnitPower(PLAYER_UNIT, ENUM_P_TYPE_ENERGY)
     frame.statusbar.maxValue = UnitPowerMax(PLAYER_UNIT, ENUM_P_TYPE_ENERGY)
     frame.statusbar:SetMinMaxValues(0, frame.statusbar.maxValue)
-    frame.statusbar:SetValue(UnitPower(PLAYER_UNIT, ENUM_P_TYPE_ENERGY))
+    frame.statusbar:SetValue(curEnergy)
+
+    if curEnergy >= frame.statusbar.maxValue then
+        self.updateText = false
+        if SimpleEnergyBarDB.showOnlyCurrentEnergy then
+            frame.statusbar.text:SetText(curEnergy)
+        else
+            frame.statusbar.text:SetText(format(ENERGY_FORMAT_STRING, curEnergy, frame.statusbar.maxValue))
+        end
+    end
 
     frame.sparkRange = frame:GetWidth()
     frame.sparkMin = 0
@@ -310,7 +347,8 @@ function SEB:GetEnergyBar()
         statusbar.spark:SetWidth(10)
         statusbar.spark:SetBlendMode("ADD")
 
-        statusbar.text = statusbar:CreateFontString(nil, "ARTWORK", "GameFontWhiteTiny")
+        statusbar.text = statusbar:CreateFontString(nil, "ARTWORK")
+        statusbar.text:SetTextColor(1,1,1,1)
         statusbar.text:SetAllPoints()
         statusbar.text:SetJustifyH("CENTER")
 

@@ -23,6 +23,10 @@ Settings can be accesd with the slash commands `/simpleenerybar` and `/seb`
 
 * `/seb showInStealth 0/1` - Allways show bar in stealth
 
+* `/seb showOnlyCurrentEnergy 0/1` - Show only current energy
+
+* `/seb textSize x` - Set size of text
+
 Druids only
 
 * `/seb onlyInCatForm 0/1` - Only show energy bar in cat
