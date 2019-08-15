@@ -7,7 +7,6 @@ This addon provides a energy bar with info when the next tick is happen
 ## Basic info
 
 The bar needs one tick to sync itself with the energy reg after login/reload.
-The druid part is untested as i dont have a druid.
 
 ## Settings
 
