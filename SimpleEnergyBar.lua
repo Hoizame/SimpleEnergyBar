@@ -29,6 +29,7 @@ local EVENT_COMBAT_START, EVENT_COMBAT_END = "PLAYER_REGEN_DISABLED", "PLAYER_RE
 local EVENT_SHAPESHIFT, EVENT_STEALTH = "UPDATE_SHAPESHIFT_FORM", "UPDATE_STEALTH"
 local ENUM_P_TYPE_ENERGY = Enum.PowerType.Energy
 local STEALTH_BUFF_NAME = PlayerClass == "DRUID" and GetSpellInfo(5215) or GetSpellInfo(1784)
+local CAT_FORM_BUFF_NAME = GetSpellInfo(768)
 local FONT_STRING, FONT_SIZE = _G["SystemFont_Tiny"]:GetFont()
 
 -- Event handler
@@ -151,12 +152,12 @@ end
 local UpdateFrame = CreateFrame("Frame", UIParent)
 UpdateFrame:SetScript("OnUpdate", OnUpdate)
 
-local function checkForBuff()
+local function checkForBuff(buffNameCheck)
     if not SimpleEnergyBarDB.showInStealth then return end
     for i = 1, 40 do
         local buffName = UnitBuff(PLAYER_UNIT,i)
         if not buffName then break end
-        if buffName == STEALTH_BUFF_NAME then
+        if buffName == buffNameCheck then
             SEB.barFrame:Show()
             return true
         end
@@ -166,7 +167,7 @@ end
 
 local function HandleDruidShapeShift()
     if SimpleEnergyBarDB.onlyInCatForm then
-        if GetShapeshiftForm() == 2 then
+        if checkForBuff(CAT_FORM_BUFF_NAME) then
             -- pass
         else
             SEB.barFrame:Hide()
@@ -174,7 +175,7 @@ local function HandleDruidShapeShift()
         end
     end
 
-    if checkForBuff() then
+    if checkForBuff(STEALTH_BUFF_NAME) then
         return true
     elseif not SimpleEnergyBarDB.inCombatOnly or ( SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) ) then
         SEB.barFrame:Show()
