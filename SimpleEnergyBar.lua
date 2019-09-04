@@ -153,7 +153,6 @@ local UpdateFrame = CreateFrame("Frame", UIParent)
 UpdateFrame:SetScript("OnUpdate", OnUpdate)
 
 local function checkForBuff(buffNameCheck)
-    if not SimpleEnergyBarDB.showInStealth then return end
     for i = 1, 40 do
         local buffName = UnitBuff(PLAYER_UNIT,i)
         if not buffName then break end
@@ -175,7 +174,7 @@ local function HandleDruidShapeShift()
         end
     end
 
-    if checkForBuff(STEALTH_BUFF_NAME) then
+    if SimpleEnergyBarDB.showInStealth and checkForBuff(STEALTH_BUFF_NAME) then
         return true
     elseif not SimpleEnergyBarDB.inCombatOnly or ( SimpleEnergyBarDB.inCombatOnly and UnitAffectingCombat(PLAYER_UNIT) ) then
         SEB.barFrame:Show()
