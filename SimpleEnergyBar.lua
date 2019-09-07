@@ -49,7 +49,7 @@ local function OnSlash(key, value, ...)
             SEB:UpdateFrameSize()
             SEB:Print("'width' set: "..SimpleEnergyBarDB.width)
         elseif key == "height" and tonumber(value) then
-            SimpleEnergyBarDB.height = tonumber(value) >= 10 and tonumber(value) or 10
+            SimpleEnergyBarDB.height = tonumber(value) -->= 10 and tonumber(value) or 10
             SEB:UpdateFrameSize()
             SEB:Print("'height' set: "..SimpleEnergyBarDB.height)
         elseif key == "lock" and tonumber(value) then
@@ -74,11 +74,11 @@ local function OnSlash(key, value, ...)
             SEB:Print("'showOnlyCurrentEnergy' set: "..( enable and "true" or "false" ))
         elseif key == "textsize" and tonumber(value) then
             local value = tonumber(value)
-            if value >= 3 then
+           --if value >= 3 then
                 SimpleEnergyBarDB.textSize = value
                 SEB:UpdateFrameSize()
                 SEB:Print("'textSize' set: "..value)
-            end
+            --end
         elseif PlayerClass == "DRUID" and key == "onlyincatform" and tonumber(value) then
             local enable = tonumber(value) == 1 and true or false
             SimpleEnergyBarDB.onlyInCatForm = enable
