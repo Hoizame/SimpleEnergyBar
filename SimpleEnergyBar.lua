@@ -72,6 +72,11 @@ local function OnSlash(key, value, ...)
             SimpleEnergyBarDB.showOnlyCurrentEnergy = enable
             SEB:UpdateFrameSize()
             SEB:Print("'showOnlyCurrentEnergy' set: "..( enable and "true" or "false" ))
+        elseif key == "showborder" and tonumber(value) then
+            local enable = tonumber(value) == 1 and true or false
+            SimpleEnergyBarDB.showBorder = enable
+            SEB:UpdateFrameSize()
+            SEB:Print("'showBorder' set: "..( enable and "true" or "false" ))
         elseif key == "textsize" and tonumber(value) then
             local value = tonumber(value)
            --if value >= 3 then
@@ -84,7 +89,8 @@ local function OnSlash(key, value, ...)
             SimpleEnergyBarDB.onlyInCatForm = enable
             SEB:UpdateFrameSize()
             SEB:Print("'onlyInCatForm' set: "..( enable and "true" or "false" ))
-
+        else
+            SEB:Print("'"..key.."' UNKNOWN")
         end
     else
         SEB:Print("Slash commands")
@@ -95,6 +101,7 @@ local function OnSlash(key, value, ...)
         SEB:Print(" - showInStealth 0/1")
         SEB:Print(" - showOnlyCurrentEnergy 0/1")
         SEB:Print(" - textSize xxx")
+        SEB:Print(" - showBorder 0/1")
         if PlayerClass == "DRUID" then
             SEB:Print(" - onlyInCatForm 0/1")
         end
@@ -310,6 +317,23 @@ function SEB:UpdateFrameSize()
         ShapeShiftOnEvent()
         frame:UnregisterEvent(EVENT_COMBAT_START)
         frame:UnregisterEvent(EVENT_COMBAT_END)
+    end
+    if db.showBorder then
+        if not frame.border then
+            frame.border = CreateFrame("Frame", nil, frame.statusbar)
+            frame.border:SetPoint('TOPLEFT', -4, 4)
+            frame.border:SetPoint('BOTTOMRIGHT', 4, -4)
+        end
+        frame.border:SetBackdrop({
+            --bgFile = "interface/Addons/"..SEB_Name.."/background",
+            edgeFile = "interface/Addons/"..SEB_Name.."/border",
+            edgeSize = 6,
+            insets = { left = 8, right = 8, top = 8, bottom = 8}})
+        frame.border:Show()
+    else
+        if frame.border then
+            frame.border:Hide()
+        end
     end
 end
 
