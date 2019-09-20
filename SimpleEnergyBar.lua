@@ -41,6 +41,16 @@ end
 local EventFrame = CreateFrame("Frame")
 EventFrame:SetScript("OnEvent", OnEvent)
 
+local function GetFormatedSlash(value, current)
+    if not value then
+        return not current
+    elseif value and tonumber(value) then
+        return tonumber(value) == 1 and true or false
+    else
+        return false
+    end
+end
+
 -- Slash handler
 local function OnSlash(key, value, ...)
     if key and key ~= "" then
@@ -52,28 +62,28 @@ local function OnSlash(key, value, ...)
             SimpleEnergyBarDB.height = tonumber(value) -->= 10 and tonumber(value) or 10
             SEB:UpdateFrameSize()
             SEB:Print("'height' set: "..SimpleEnergyBarDB.height)
-        elseif key == "lock" and tonumber(value) then
-            local enable = tonumber(value) == 1 and true or false
+        elseif key == "lock" then
+            local enable = GetFormatedSlash(value, SimpleEnergyBarDB.locked)
             SimpleEnergyBarDB.locked = enable
             SEB:UpdateFrameSize()
             SEB:Print("'lock' set: "..( enable and "true" or "false" ))
-        elseif key == "incombatonly" and tonumber(value) then
-            local enable = tonumber(value) == 1 and true or false
+        elseif key == "incombatonly" then
+            local enable = GetFormatedSlash(value, SimpleEnergyBarDB.inCombatOnly)
             SimpleEnergyBarDB.inCombatOnly = enable
             SEB:UpdateFrameSize()
             SEB:Print("'inCombatOnly' set: "..( enable and "true" or "false" ))
-        elseif key == "showinstealth" and tonumber(value) then
-            local enable = tonumber(value) == 1 and true or false
+        elseif key == "showinstealth" then
+            local enable = GetFormatedSlash(value, SimpleEnergyBarDB.showInStealth)
             SimpleEnergyBarDB.showInStealth = enable
             SEB:UpdateFrameSize()
             SEB:Print("'showInStealth' set: "..( enable and "true" or "false" ))
-        elseif key == "showonlycurrentenergy" and tonumber(value) then
-            local enable = tonumber(value) == 1 and true or false
+        elseif key == "showonlycurrentenergy" then
+            local enable = GetFormatedSlash(value, SimpleEnergyBarDB.showOnlyCurrentEnergy)
             SimpleEnergyBarDB.showOnlyCurrentEnergy = enable
             SEB:UpdateFrameSize()
             SEB:Print("'showOnlyCurrentEnergy' set: "..( enable and "true" or "false" ))
-        elseif key == "showborder" and tonumber(value) then
-            local enable = tonumber(value) == 1 and true or false
+        elseif key == "showborder" then
+            local enable = GetFormatedSlash(value, SimpleEnergyBarDB.showBorder)
             SimpleEnergyBarDB.showBorder = enable
             SEB:UpdateFrameSize()
             SEB:Print("'showBorder' set: "..( enable and "true" or "false" ))
@@ -84,8 +94,8 @@ local function OnSlash(key, value, ...)
                 SEB:UpdateFrameSize()
                 SEB:Print("'textSize' set: "..value)
             --end
-        elseif PlayerClass == "DRUID" and key == "onlyincatform" and tonumber(value) then
-            local enable = tonumber(value) == 1 and true or false
+        elseif PlayerClass == "DRUID" and key == "onlyincatform" then
+            local enable = GetFormatedSlash(value, SimpleEnergyBarDB.onlyInCatForm)
             SimpleEnergyBarDB.onlyInCatForm = enable
             SEB:UpdateFrameSize()
             SEB:Print("'onlyInCatForm' set: "..( enable and "true" or "false" ))
