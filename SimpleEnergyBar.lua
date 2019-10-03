@@ -354,7 +354,8 @@ end
 
 function SEB:GetEnergyBar()
     if not self.barFrame then
-        local frame = CreateFrame("Frame", UIParent)
+        local frame = CreateFrame("Frame", "SimpleEnergyBarFrame", UIParent)
+        frame:SetScale(1)
         frame:SetWidth(150)
         frame:SetHeight(10)
         frame:SetClampedToScreen(true)
