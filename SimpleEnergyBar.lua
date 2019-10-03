@@ -19,7 +19,7 @@ local GetShapeshiftForm = _G.GetShapeshiftForm
 local GetSpellInfo = _G.GetSpellInfo
 
 
-local BASE_REG_SEC = 2.0
+local BASE_REG, BASE_REG_SEC = 20, 2
 local ENERGY_FORMAT_STRING = "%d / %d"
 local ENERGY_FORMAT_STRING_TIMER = "%d / %d (%.1f)"
 local ENERGY_FORMAT_STRING_TIMER_NO_MAX = "%d (%.1f)"
@@ -148,9 +148,12 @@ local function OnUpdate()
     if not SEB.nextTick then return end
     local curTime = GetTime()
     local diff = SEB.nextTick - curTime
-    if diff < 0 then
-        SEB.nextTick = curTime + BASE_REG_SEC
-        diff = 0
+    if diff <= 0 then
+        if SEB.lastEventTime then
+            local numTicksSinceLastUpdate = ( (curTime - SEB.lastEventTime) - ((curTime - SEB.lastEventTime) % BASE_REG_SEC) )
+            SEB.nextTick = SEB.lastEventTime + numTicksSinceLastUpdate + BASE_REG_SEC
+        end
+        diff = BASE_REG_SEC
     end
     if SEB.barFrame:IsShown() then
         local barFrame = SEB.barFrame
@@ -226,29 +229,31 @@ local function FramOnEvent(self, event, arg1, arg2, ...)
     if event == EVENT_UNIT_POWER_FREQUENT and arg1 == PLAYER_UNIT and arg2 == POWER_TYPE then
         local statusbar = self.statusbar
         local power, powerMax = UnitPower(PLAYER_UNIT, ENUM_P_TYPE_ENERGY), UnitPowerMax(PLAYER_UNIT, ENUM_P_TYPE_ENERGY)
-        local lastPowerCheck = ( self.power and self.power < power ) and true or false
+        local lastPowerCheck = ( self.power and ( self.power < power and ( power - self.power > 1 ))) and true or false
         self.power = power
         statusbar:SetValue(power)
         if power >= powerMax then
+            SEB.lastEventTime = GetTime()
             self.updateText = false
             if SimpleEnergyBarDB.showOnlyCurrentEnergy then
                 statusbar.text:SetText(power)
             else
                 statusbar.text:SetText(format(ENERGY_FORMAT_STRING, power, powerMax))
             end
+            return
         elseif not SEB.nextTick then
-            SEB.nextTick = GetTime() + BASE_REG_SEC
+            SEB.lastEventTime = GetTime()
+            SEB.nextTick = SEB.lastEventTime
             self.updateText = true
         elseif SEB.nextTick and power < powerMax then
             self.updateText = true
         end
 
         if SEB.nextTick and lastPowerCheck then
-            SEB.nextTick = GetTime() + BASE_REG_SEC
+            SEB.lastEventTime = GetTime()
+            SEB.nextTick = SEB.lastEventTime
             statusbar.spark:SetPoint("CENTER", statusbar, "LEFT", 0, 0)
         end
-    elseif event == EVENT_UNIT_MAXPOWER and arg1 == PLAYER_UNIT and arg2 == POWER_TYPE then
-        SEB:UpdateFrameSize()
     elseif event == EVENT_COMBAT_START and SimpleEnergyBarDB.inCombatOnly then
         ShapeShiftOnEvent()
     elseif event == EVENT_COMBAT_END and SimpleEnergyBarDB.inCombatOnly then
@@ -357,7 +362,6 @@ function SEB:GetEnergyBar()
         frame:SetBackdropColor(0, 0, 0)
         frame:RegisterForDrag("LeftButton", "RightButton")
         frame:RegisterEvent(EVENT_UNIT_POWER_FREQUENT)
-        frame:RegisterEvent(EVENT_UNIT_MAXPOWER)
         frame:RegisterEvent(EVENT_SHAPESHIFT)
         if PlayerClass == "DRUID" then
             frame:RegisterEvent(EVENT_STEALTH)
