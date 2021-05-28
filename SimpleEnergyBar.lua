@@ -339,8 +339,10 @@ function SEB:UpdateFrameSize()
             frame.border:SetPoint('TOPLEFT', -4, 4)
             frame.border:SetPoint('BOTTOMRIGHT', 4, -4)
         end
+	if not frame.border.SetBackdrop then
+		Mixin(frame.border, BackdropTemplateMixin)
+	end
         frame.border:SetBackdrop({
-            --bgFile = "interface/Addons/"..SEB_Name.."/background",
             edgeFile = "interface/Addons/"..SEB_Name.."/border",
             edgeSize = 6,
             insets = { left = 8, right = 8, top = 8, bottom = 8}})
@@ -359,6 +361,9 @@ function SEB:GetEnergyBar()
         frame:SetWidth(150)
         frame:SetHeight(10)
         frame:SetClampedToScreen(true)
+	if not frame.SetBackdrop then
+		Mixin(frame, BackdropTemplateMixin)
+	end
         frame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
         frame:SetBackdropColor(0, 0, 0)
         frame:RegisterForDrag("LeftButton", "RightButton")
